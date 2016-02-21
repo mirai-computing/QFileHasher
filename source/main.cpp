@@ -1,6 +1,6 @@
 /*
-    QFileHasher * A file hash calculation and verification utility
-    Copyright (C) 2009 Mirai Computing (mirai.computing@gmail.com)
+    QFileHasher * Cryptographic hash calculation and verification utility
+    Copyright (C) 2009-2011 Mirai Computing (mirai.computing@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,9 +20,11 @@
 #include <QtCore/QTranslator>
 #include <QtGui/QApplication>
 #include "mainwindow.h"
+#include "sighand.h"
 
 int main(int argc, char *argv[])
 {
+ //init_sighand();
  QApplication a(argc, argv);
  //
  QTranslator qtTranslator;
@@ -40,5 +42,7 @@ int main(int argc, char *argv[])
  //
  MainWindow w;
  w.show();
- return a.exec();
+ int result = a.exec();
+ //done_sighand();
+ return result;
 }

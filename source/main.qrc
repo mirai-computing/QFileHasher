@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/" >
+    <qresource prefix="/">
         <file>resources/images/view-refresh.png</file>
         <file>resources/images/document-new.png</file>
         <file>resources/images/document-open.png</file>
@@ -35,5 +35,6 @@
         <file>resources/translations/qt_ru.qm</file>
         <file>resources/images/action-restart.png</file>
         <file>resources/images/preferences-system.png</file>
+        <file>resources/images/weather-clear.png</file>
     </qresource>
 </RCC>

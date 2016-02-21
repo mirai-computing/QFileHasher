@@ -48,7 +48,10 @@ SOURCES += source/main.cpp \
     source/librhash/crc32.c \
     source/librhash/byte_order.c \
     source/librhash/aich.c \
-    source/bytearraycodec.cpp
+    source/bytearraycodec.cpp \
+    source/multihash.cpp \
+    source/qt4helper.cpp \
+    source/sighand.cpp
 HEADERS += source/mainwindow.h \
     source/filehashingthread.h \
     source/filehasher.h \
@@ -74,7 +77,10 @@ HEADERS += source/mainwindow.h \
     source/librhash/byte_order.h \
     source/librhash/aich.h \
     source/librhash/tiger.h \
-    source/bytearraycodec.h
+    source/bytearraycodec.h \
+    source/multihash.h \
+    source/qt4helper.h \
+    source/sighand.h
 FORMS += source/mainwindow.ui
 RESOURCES += source/main.qrc
 TRANSLATIONS += source/qfilehasher_ru.ts

@@ -1,6 +1,6 @@
 /*
-    QFileHasher * A file hash calculation and verification utility
-    Copyright (C) 2009 Mirai Computing (mirai.computing@gmail.com)
+    QFileHasher * Cryptographic hash calculation and verification utility
+    Copyright (C) 2009-2011 Mirai Computing (mirai.computing@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ private:
                           const int bitsPerBlock, const int blocksPerGroup);
 public:
  static QString name(const Encoding encoding);
+ static QString alphabet(const Encoding encoding);
  static bool detect(const QString& data, Encoding& encoding);
  static QByteArray fromString(const QString& data, const Encoding encoding);
  static QString toString(const QByteArray& data, const Encoding encoding);

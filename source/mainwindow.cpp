@@ -1,6 +1,6 @@
 /*
-    QFileHasher * A file hash calculation and verification utility
-    Copyright (C) 2009 Mirai Computing (mirai.computing@gmail.com)
+    QFileHasher * Cryptographic hash calculation and verification utility
+    Copyright (C) 2009-2011 Mirai Computing (mirai.computing@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 */
 
 #include <cmath>
+#include <sys/time.h>
 
 #include <QtCore/QTextCodec>
 #include <QtCore/QTextStream>
@@ -24,6 +25,8 @@
 #include <QtGui/QDesktopWidget>
 #include <QtGui/QScrollBar>
 #include <QtGui/QHeaderView>
+
+#include "qt4helper.h"
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -50,19 +53,22 @@ MainWindow::MainWindow(QWidget *parent)
                   << tr("SHA1 hash files (*.sha1)")
                   << tr("All files (*)");*/
  //
- QComboBox *comboHashType[3] = {ui->comboBoxComputeHashType,
-                                ui->comboBoxVerifyHashType,
-                                ui->comboBoxUpdateHashType};
- for (int j = 0; j < 3; j++) comboHashType[j]->clear();
- for (int i = 0; i < CCryptographicHash::AlgorithmCount; i++)
  {
-  QString hashName = CCryptographicHash::name((CCryptographicHash::Algorithm)i);
-  QString hashDesc = CCryptographicHash::description((CCryptographicHash::Algorithm)i);
-  QString hashExt = CCryptographicHash::extension((CCryptographicHash::Algorithm)i);
-  for (int j = 0; j < 3; j++) comboHashType[j]->addItem(hashName);
-  (*m_FileFilters) << tr("%1 hash files (*.%2)").arg(hashDesc).arg(hashExt);
+  QComboBox *comboHashType[4] = {ui->comboBoxComputeHashType,
+                                 ui->comboBoxVerifyHashType,
+                                 ui->comboBoxUpdateHashType,
+                                 ui->comboBoxStringHashType};
+  for (int j = 0; j < 4; j++) comboHashType[j]->clear();
+  for (int i = 0; i < CCryptographicHash::AlgorithmCount; i++)
+  {
+   QString hashName = CCryptographicHash::name((CCryptographicHash::Algorithm)i);
+   QString hashDesc = CCryptographicHash::description((CCryptographicHash::Algorithm)i);
+   QString hashExt = CCryptographicHash::extension((CCryptographicHash::Algorithm)i);
+   for (int j = 0; j < 4; j++) comboHashType[j]->addItem(hashName);
+   (*m_FileFilters) << tr("%1 hash files (*.%2)").arg(hashDesc).arg(hashExt);
+  }
+  (*m_FileFilters) << tr("All files (*)");
  }
- (*m_FileFilters) << tr("All files (*)");
  //
  m_OpenFileDialog = new QFileDialog(this,Qt::Dialog);
  m_OpenFileDialog->setAcceptMode(QFileDialog::AcceptOpen);
@@ -92,26 +98,40 @@ MainWindow::MainWindow(QWidget *parent)
  //ui->tableWidget->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
  ui->labelFileName->setText(""); ui->labelFileSize->setText("");
  {
-  ui->comboBoxEncoding->clear();
-  ui->comboBoxFileListEncoding->clear();
+  QComboBox *comboTextEncoding[3] = {ui->comboBoxEncoding,
+                                     ui->comboBoxFileListEncoding,
+                                     ui->comboBoxStringTextEncoding};
+  for (int j = 0; j < 3; j++) comboTextEncoding[j]->clear();
   for (int i = 0, n = m_FileHasher->textEncodingCount(); i < n; i++)
   {
    QString encoding = m_FileHasher->textEncoding(i);
-   ui->comboBoxEncoding->addItem(encoding);
-   ui->comboBoxFileListEncoding->addItem(encoding);
+   for (int j = 0; j < 3; j++) comboTextEncoding[j]->addItem(encoding);
   }
   int index = m_FileHasher->textEncodingIndex();
-  ui->comboBoxEncoding->setCurrentIndex(index);
-  ui->comboBoxFileListEncoding->setCurrentIndex(index);
+  for (int j = 0; j < 3; j++) comboTextEncoding[j]->setCurrentIndex(index);
+ }
+ {
+  QComboBox *comboHashEncoding[2] = {ui->comboBoxHashEncoding,
+                                     ui->comboBoxStringHashEncoding};
+  for (int j = 0; j < 2; j++)
+  {
+   comboHashEncoding[j]->clear();
+   comboHashEncoding[j]->addItem(tr("Base16 upper case"));
+   comboHashEncoding[j]->addItem(tr("Base16 lower case"));
+   comboHashEncoding[j]->addItem(tr("Base32"));
+   comboHashEncoding[j]->addItem(tr("Base32hex"));
+   comboHashEncoding[j]->addItem(tr("Base64"));
+   comboHashEncoding[j]->addItem(tr("Base64url"));
+  }
  }
  // connect signals to slots //
- connect(ui->action_New,SIGNAL(triggered()),this,SLOT(newChecksumFile()));
+ connect(ui->action_New,SIGNAL(triggered()),this,SLOT(switchToNewChecksumFileScreen()));
  connect(ui->action_Open,SIGNAL(triggered()),this,SLOT(openChecksumFile()));
  connect(ui->action_Verify,SIGNAL(triggered()),this,SLOT(verifyFileHashes()));
  connect(ui->action_Update,SIGNAL(triggered()),this,SLOT(updateFileHashes()));
  connect(ui->action_Preview,SIGNAL(triggered()),this,SLOT(previewChecksumFile()));
  connect(ui->action_Save,SIGNAL(triggered()),this,SLOT(saveChecksumFile()));
- connect(ui->action_About,SIGNAL(triggered()),this,SLOT(showAboutPage()));
+ connect(ui->action_About,SIGNAL(triggered()),this,SLOT(switchToAboutScreen()));
  connect(ui->pushButtonLocationComputer,SIGNAL(clicked()),
          this,SLOT(setLocationComputer()));
  connect(ui->pushButtonLocationHome,SIGNAL(clicked()),
@@ -143,7 +163,7 @@ MainWindow::MainWindow(QWidget *parent)
  connect(ui->pushButtonStartHashing,SIGNAL(clicked()),
          this,SLOT(startHashing()));
  connect(ui->pushButtonCancelHashing,SIGNAL(clicked()),
-         this,SLOT(newChecksumFile()));
+         this,SLOT(switchToNewChecksumFileScreen()));
  connect(ui->pushButtonPauseHashing,SIGNAL(clicked()),
          this,SLOT(pauseHashing()));
  connect(ui->pushButtonStopHashing,SIGNAL(clicked()),
@@ -157,17 +177,20 @@ MainWindow::MainWindow(QWidget *parent)
  connect(ui->pushButtonStartVerification,SIGNAL(clicked()),
          this,SLOT(startHashing()));
  connect(ui->pushButtonCancelVerification,SIGNAL(clicked()),
-         this,SLOT(newChecksumFile()));
+         this,SLOT(switchToNewChecksumFileScreen()));
+ connect(ui->comboBoxUpdateMode,SIGNAL(currentIndexChanged(int)),
+         this,SLOT(changeUpdateMode(int)));
  connect(ui->pushButtonStartUpdating,SIGNAL(clicked()),
          this,SLOT(startHashing()));
  connect(ui->pushButtonCancelUpdating,SIGNAL(clicked()),
-         this,SLOT(newChecksumFile()));
+         this,SLOT(switchToNewChecksumFileScreen()));
  connect(ui->comboBoxEncoding,SIGNAL(currentIndexChanged(QString)),
          this,SLOT(changeTextEncoding(QString)));
  connect(ui->comboBoxFileListEncoding,SIGNAL(currentIndexChanged(int)),
          ui->comboBoxEncoding,SLOT(setCurrentIndex(int)));
  connect(ui->comboBoxEncoding,SIGNAL(currentIndexChanged(int)),
          ui->comboBoxFileListEncoding,SLOT(setCurrentIndex(int)));
+ //
  connect(m_FileHasher,SIGNAL(fileProcessingBegan()),
          this,SLOT(beginFileProcessing()));
  connect(m_FileHasher,SIGNAL(fileProcessingUpdated()),
@@ -187,6 +210,24 @@ MainWindow::MainWindow(QWidget *parent)
          this,SLOT(refreshChecksumFile1(int)));
  connect(ui->comboBoxDateTimeFormat,SIGNAL(currentIndexChanged(int)),
          this,SLOT(refreshChecksumFile1(int)));
+ // start screen
+ connect(ui->action_StartScreen,SIGNAL(triggered()),
+         this,SLOT(switchToStartScreen()));
+ connect(ui->pushButtonProcessString,SIGNAL(clicked()),
+         this,SLOT(switchToProcessStringScreen()));
+ connect(ui->pushButtonProcessFile,SIGNAL(clicked()),
+         this,SLOT(switchToProcessSingleFileScreen()));
+ connect(ui->pushButtonDetectHash,SIGNAL(clicked()),
+         this,SLOT(switchToDetectHashScreen()));
+ connect(ui->pushButtonProcessFiles,SIGNAL(clicked()),
+         this,SLOT(switchToProcessMultipleFilesScreen()));
+ // string or single file hashing
+ connect(ui->pushButtonSelectFile,SIGNAL(clicked()),
+         this,SLOT(selectSingleFile()));
+ connect(ui->pushButtonCalculateStringHash,SIGNAL(clicked()),
+         this,SLOT(calculateStringOrFileHash()));
+ connect(ui->pushButtonVerifyStringHash,SIGNAL(clicked()),
+         this,SLOT(verifyStringOrFileHash()));
  // switch to initial state //
  ui->radioButtonAbsolutePaths->hide();
  ui->radioButtonRelativePaths->hide();
@@ -197,7 +238,8 @@ MainWindow::MainWindow(QWidget *parent)
  }
  //ui->treeViewDirs->setCurrentIndex(m_DirModel->index(m_FileHasher->getRootPath()));
  restoreSettings();
- newChecksumFile();
+ //switchToNewChecksumFileScreen();
+ switchToStartScreen();
  processArguments();
  //
 }
@@ -290,6 +332,251 @@ void MainWindow::processArguments(void)
   m_OpenFileDialog->selectFile(arguments.at(1));
   openChecksumFile();
  }
+}
+
+void MainWindow::switchToStartScreen(void)
+{
+ disable(ui->action_StartScreen);
+ disable(ui->action_New); disable(ui->action_Open);
+ disable(ui->action_Verify); disable(ui->action_Update);
+ disable(ui->action_Preview); disable(ui->action_Save);
+ ui->stackedWidget->setCurrentWidget(ui->pageStartScreen);
+ ui->statusBar->showMessage("");
+}
+
+void MainWindow::switchToProcessStringScreen(void)
+{
+ ui->checkBoxUseFileContents->setChecked(false);
+ //if (ui->lineEditStringFilename->text().isEmpty())
+ {
+  ui->lineEditStringFilename->setText(tr("Write your string here."));
+ }
+ enable(ui->action_StartScreen);
+ disable(ui->action_New); disable(ui->action_Open);
+ disable(ui->action_Verify); disable(ui->action_Update);
+ disable(ui->action_Preview); disable(ui->action_Save);
+ ui->labelStringTextEncoding->setVisible(true);
+ ui->comboBoxStringTextEncoding->setVisible(true);
+ ui->checkBoxUseFileContents->setVisible(false);
+ ui->checkBoxUseFileContents->setChecked(false);
+ ui->pushButtonSelectFile->setVisible(false);
+ ui->pushButtonCalculateStringHash->setVisible(true);
+ ui->pushButtonVerifyStringHash->setVisible(true);
+ ui->pushButtonDetectStringHash->setVisible(false);
+ ui->tableWidgetStringHash->setVisible(false);
+ ui->lineEditStringHash->clear();
+ ui->stackedWidget->setCurrentWidget(ui->pageStringHash);
+}
+
+
+void MainWindow::switchToProcessSingleFileScreen(void)
+{
+ ui->checkBoxUseFileContents->setChecked(false);
+ //if (ui->lineEditStringFilename->text().isEmpty())
+ {
+  ui->lineEditStringFilename->setText(tr("Write your filename here or press \"Select file\" button."));
+ }
+ enable(ui->action_StartScreen);
+ disable(ui->action_New); disable(ui->action_Open);
+ disable(ui->action_Verify); disable(ui->action_Update);
+ disable(ui->action_Preview); disable(ui->action_Save);
+ ui->labelStringTextEncoding->setVisible(false);
+ ui->comboBoxStringTextEncoding->setVisible(false);
+ ui->checkBoxUseFileContents->setVisible(true);
+ ui->checkBoxUseFileContents->setChecked(true);
+ ui->pushButtonSelectFile->setVisible(true);
+ ui->pushButtonCalculateStringHash->setVisible(true);
+ ui->pushButtonVerifyStringHash->setVisible(true);
+ ui->pushButtonDetectStringHash->setVisible(false);
+ ui->tableWidgetStringHash->setVisible(false);
+ ui->lineEditStringHash->clear();
+ ui->stackedWidget->setCurrentWidget(ui->pageStringHash);
+}
+
+void MainWindow::switchToProcessMultipleFilesScreen(void)
+{
+ switchToNewChecksumFileScreen();
+}
+
+void MainWindow::switchToDetectHashScreen(void)
+{
+ enable(ui->action_StartScreen);
+ disable(ui->action_New); disable(ui->action_Open);
+ disable(ui->action_Verify); disable(ui->action_Update);
+ disable(ui->action_Preview); disable(ui->action_Save);
+ ui->labelStringTextEncoding->setVisible(true);
+ ui->comboBoxStringTextEncoding->setVisible(true);
+ ui->checkBoxUseFileContents->setVisible(true);
+ ui->checkBoxUseFileContents->setChecked(false);
+ ui->pushButtonSelectFile->setVisible(true);
+ ui->pushButtonCalculateStringHash->setVisible(false);
+ ui->pushButtonVerifyStringHash->setVisible(false);
+ ui->pushButtonDetectStringHash->setVisible(true);
+ ui->tableWidgetStringHash->setVisible(false);
+ //if (ui->lineEditStringHash->text().isEmpty())
+ {
+  ui->lineEditStringFilename->setText(tr("Write your string or filename here or press \"Select file\" button."));
+  ui->lineEditStringHash->setText(tr("Write your hash here."));
+ }
+ ui->stackedWidget->setCurrentWidget(ui->pageStringHash);
+}
+
+void MainWindow::switchToAboutScreen(void)
+{
+ enable(ui->action_StartScreen);
+ ui->stackedWidget->setCurrentWidget(ui->pageAbout);
+ //enable(ui->action_New);
+ ui->statusBar->showMessage(tr("Click \"Begin\" button to go back to work."));
+}
+
+void MainWindow::selectSingleFile(void)
+{
+ QStringList file_filter;
+ file_filter << tr("All files (*)");
+ QFileDialog dialog;
+ dialog.setAcceptMode(QFileDialog::AcceptOpen);
+ dialog.setFileMode(QFileDialog::ExistingFile);
+ dialog.setFilters(file_filter);
+ if (QFileDialog::Accepted == dialog.exec())
+ {
+  ui->lineEditStringFilename->setText(dialog.selectedFiles().first());
+  ui->checkBoxUseFileContents->setChecked(true);
+ }
+}
+
+void MainWindow::calculateStringOrFileHash(void)
+{
+ // initialize multihash
+ CCryptographicMultiHash multi_hash;
+ int hash_type = ui->comboBoxStringHashType->currentIndex();
+ if (ui->checkBoxShowAllStringHashes->isChecked())
+ {
+  multi_hash.enableAllMethods();
+  ui->tableWidgetStringHash->setVisible(true);
+ }
+ else
+ {
+  multi_hash.disableAllMethods();
+  multi_hash.enableMethod((CCryptographicMultiHash::Algorithm)hash_type);
+  ui->tableWidgetStringHash->setVisible(false);
+ }
+ // feed data to multihash
+ if (ui->checkBoxUseFileContents->isChecked())
+ {
+  // calculate single file hash
+  QFile file(ui->lineEditStringFilename->text());
+  if (file.open(QIODevice::ReadOnly))
+  {
+   while (file.pos() < file.size())
+   {
+    QApplication::processEvents();
+    //CSleeper::msleep(100);
+    multi_hash.addData(file.read(0x100000));
+    int file_progress = (int)(100.0*file.pos()/file.size());
+    ui->statusBar->showMessage(tr("File hashing in progress ... %1\% done.")
+                               .arg(file_progress));
+   }
+   file.close();
+   ui->statusBar->showMessage(tr("File hashing finished."));
+  }
+  else
+  {
+   ui->statusBar->showMessage(tr("Error: Cannot open file."));
+   return;
+  }
+ }
+ else
+ {
+  // calculate string hash
+  QString text_codec_name = ui->comboBoxStringTextEncoding->currentText();
+  QTextCodec *text_codec = QTextCodec::codecForName(text_codec_name.toUtf8());
+  if (0!=text_codec)
+  {
+   QString text = ui->lineEditStringFilename->text();
+   QByteArray data = text_codec->fromUnicode(text);
+   multi_hash.addData(data);
+  }
+  else
+  {
+   ui->statusBar->showMessage(tr("Error: Unsupported text encoding \"%1\".")
+                              .arg(text_codec_name));
+   return;
+  }
+ }
+ // show results
+ QByteArray hash_data = multi_hash.result((CCryptographicMultiHash::Algorithm)hash_type);
+ int hash_encoding = ui->comboBoxStringHashEncoding->currentIndex();
+ QString hash_text = CByteArrayCodec::toString(hash_data,(CByteArrayCodec::Encoding)hash_encoding);
+ ui->lineEditStringHash->setText(hash_text);
+ if (ui->checkBoxShowAllStringHashes->isChecked())
+ {
+  //QList<CCryptographicMultiHash::Algorithm> methods; QStringList method_names;
+  //QList<QByteArray> mhash_data = multi_hash.messageDigests(methods,method_names);
+  //
+  QTableWidget *tw = ui->tableWidgetStringHash;
+  tw->clear();
+  tw->setRowCount(0);
+  tw->setColumnCount(3);
+  tw->setRowCount(m_FileHasher->sourceFilesCount());
+  tw->horizontalHeader()->setResizeMode(0,QHeaderView::ResizeToContents);
+  tw->horizontalHeader()->setResizeMode(1,QHeaderView::ResizeToContents);
+  tw->horizontalHeader()->setResizeMode(2,QHeaderView::Stretch);
+  tw->setHorizontalHeaderItem(0,new QTableWidgetItem(tr("Hash type")));
+  tw->setHorizontalHeaderItem(1,new QTableWidgetItem(tr("Hash encoding")));
+  tw->setHorizontalHeaderItem(2,new QTableWidgetItem(tr("Hash value")));
+  int n = (int)CCryptographicMultiHash::AlgorithmCount;
+  int m = (int)CByteArrayCodec::EncodingCount;
+  tw->setRowCount(n*m);
+  for (int i = 0, k = 0; i < n; i++)
+  {
+   QString hash_name = CCryptographicMultiHash::name((CCryptographicMultiHash::Algorithm)i);
+   QByteArray hash_data = multi_hash.result((CCryptographicMultiHash::Algorithm)i);
+   for (int j = 0; j < m; j++, k++)
+   {
+    QString hash_encoding_name = CByteArrayCodec::name((CByteArrayCodec::Encoding)j);
+    QString hash_text = CByteArrayCodec::toString(hash_data,((CByteArrayCodec::Encoding)j));
+    tw->setItem(k,0,new QTableWidgetItem(hash_name));
+    tw->setItem(k,1,new QTableWidgetItem(hash_encoding_name));
+    tw->setItem(k,2,new QTableWidgetItem(hash_text));
+   }
+  }
+  tw->resizeColumnsToContents();
+  tw->resizeRowsToContents();
+ }
+}
+
+void MainWindow::verifyStringOrFileHash(void)
+{
+ // backup input
+ QString user_hash_text = ui->lineEditStringHash->text();
+ calculateStringOrFileHash();
+ QString hash_text = ui->lineEditStringHash->text();
+ if (ui->checkBoxUseFileContents->isChecked())
+ {
+  // verify single file hash
+  if (hash_text == user_hash_text)
+  {
+   ui->statusBar->showMessage(tr("File hash is correct!"));
+  }
+  else
+  {
+   ui->statusBar->showMessage(tr("File hash is incorrect."));
+  }
+ }
+ else
+ {
+  // verify string hash
+  if (hash_text == user_hash_text)
+  {
+   ui->statusBar->showMessage(tr("String hash is correct!"));
+  }
+  else
+  {
+   ui->statusBar->showMessage(tr("String hash is incorrect."));
+  }
+ }
+ // restore input
+ ui->lineEditStringHash->setText(user_hash_text);
 }
 
 void MainWindow::setAccessible(QWidget& widget, const bool state)
@@ -410,6 +697,7 @@ void MainWindow::selectRootDir(void)
     ui->listWidgetSelection->item(i)->setCheckState(Qt::Checked);
    }
    //
+   changeUpdateMode(ui->comboBoxUpdateMode->currentIndex());
    ui->stackedWidget->setCurrentWidget(ui->pageVerifySelection);
    enable(ui->action_New); enable(ui->action_Open);
    disable(ui->action_Verify); disable(ui->action_Update);
@@ -443,7 +731,7 @@ void MainWindow::selectRootDir(void)
    }
    else
    {
-    missingFiles << tr("All files listed in ChecksumFile are found, none missing.");
+    missingFiles << tr("All files listed in checksum file are found, none missing.");
    }
    // bring up to ui //
    ui->textBrowserMissingFiles->setPlainText(missingFiles.join("\n"));
@@ -457,17 +745,19 @@ void MainWindow::selectRootDir(void)
  //enable(ui->pushButtonPauseHashing);
 }
 
-void MainWindow::newChecksumFile(void)
+void MainWindow::switchToNewChecksumFileScreen(void)
 {
  m_FileHasher->setOperationMode(CFileHasher::Computation);
  //m_FileHasher->clearScanSelection();//fixed in selectRootDir(void)//
  m_DirModel->setFilter(QDir::Dirs|QDir::NoDotAndDotDot);
- changeRootDir(ui->treeViewDirs->currentIndex());
+ //changeRootDir(ui->treeViewDirs->currentIndex());
+ changeRootDir(m_DirModel->index(m_FileHasher->rootPath()));
  ui->stackedWidget->setCurrentWidget(ui->pageRootDir);
  disable(ui->action_New); disable(ui->action_Verify);
  disable(ui->action_Update); disable(ui->action_Preview);
  disable(ui->action_Save);
  enable(ui->action_Open); enable(ui->action_About);
+
  ui->statusBar->showMessage(tr("Compute hashes: select root directory to continue and click \"Select\" button."));
 }
 
@@ -490,7 +780,7 @@ void MainWindow::openChecksumFile(void)
     ui->comboBoxVerifyHashType->setCurrentIndex(hashType);
     ui->comboBoxUpdateHashType->setCurrentIndex(hashType);
     //
-    // workaround: assume this mode before it actually activated
+    // workaround: assume this mode before it is actually activated
     // to allow input file reloading when encoding changes
     m_FileHasher->setOperationMode(CFileHasher::Verification);
 
@@ -508,6 +798,7 @@ void MainWindow::openChecksumFile(void)
     ui->comboBoxHashEncoding->setEnabled(true);
     //
     disable(ui->action_Preview); disable(ui->action_About);
+
     enable(ui->action_New); enable(ui->action_Open);
     enable(ui->action_Verify); enable(ui->action_Update);
     enable(ui->action_Save);
@@ -615,6 +906,7 @@ void MainWindow::previewChecksumFile(void)
  //
  disable(ui->action_Verify); disable(ui->action_Update);
  disable(ui->action_Preview); disable(ui->action_About);
+
  enable(ui->action_New); enable(ui->action_Open); enable(ui->action_Save);
 }
 
@@ -684,13 +976,6 @@ void MainWindow::saveChecksumFile(void)
    }
    m_FileHasher->saveChecksumFile(fileName);
  }}
-}
-
-void MainWindow::showAboutPage(void)
-{
- ui->stackedWidget->setCurrentWidget(ui->pageAbout);
- enable(ui->action_New);
- ui->statusBar->showMessage(tr("Click \"New\" or \"Open\" to go back to work."));
 }
 
 void MainWindow::selectAllFiles(void)
@@ -796,6 +1081,21 @@ void MainWindow::verifyNone(void)
   ui->listWidgetSelection->item(i)->setCheckState(Qt::Unchecked);
  }
  disable(ui->pushButtonStartVerification);
+}
+
+void MainWindow::changeUpdateMode(const int index)
+{
+ QString hint;
+ switch (index)
+ {
+  case 0: { hint = tr("Brief mode: recalculate hashes for same files."); break; }
+  case 1: { hint = tr("Deep mode: search for new files in same directories."); break; }
+  case 2: { hint = tr("delta-Deep mode: search for new files in same directories, update only new files."); break; }
+  case 3: { hint = tr("Complete mode: search for new files recursively, update all files."); break; }
+  case 4: { hint = tr("delta-Complete mode: search for new files recursively, update only new files."); break; }
+  //case 5: { hint = tr(""); break; }
+ }
+ ui->labelUpdateModeHint->setText(hint);
 }
 
 void MainWindow::showCounters(void)
@@ -998,52 +1298,6 @@ void MainWindow::stopHashing(void)
  ui->statusBar->showMessage("");
 }
 
-QString MainWindow::decorateFileName(const QString& fileName,
- const QFontMetrics& fontMetrics, const int stringWidth)
-{
- if ((fileName.length() >= 1) && (stringWidth > 0))
- {
-  double rawWidth = (double)(fontMetrics.width(fileName)+fontMetrics.width(" ~ "));
-  double charRate = (double)fileName.length()/rawWidth;
-  if (rawWidth > 0.0)
-  {
-   int halfLength = (int)floor(0.4*(double)stringWidth*charRate);
-   return fileName.left(halfLength)+" ~ "+fileName.right(halfLength);
-  }
- }
- return "";
-}
-
-QString MainWindow::decorateFileSize(const qint64 fileSize)
-{
- const qint64 kb = 0x00000000400LL;
- const qint64 mb = 0x00000100000LL;
- const qint64 gb = 0x00040000000LL;
- const qint64 tb = 0x10000000000LL;
- const int fieldWidth = 6;
- const int precision  = 2;
- if (fileSize <= kb)
- {
-  return QString("%1 b").arg((double)fileSize,fieldWidth,'f',precision);
- }
- else if (fileSize <= mb)
- {
-  return QString("%1 Kb").arg((double)fileSize/(double)kb,fieldWidth,'f',precision);
- }
- else if (fileSize <= gb)
- {
-  return QString("%1 Mb").arg((double)fileSize/(double)mb,fieldWidth,'f',precision);
- }
- else if (fileSize <= tb)
- {
-  return QString("%1 Gb").arg((double)fileSize/(double)gb,fieldWidth,'f',precision);
- }
- else
- {
-  return QString("%1 Tb").arg((double)fileSize/(double)tb,fieldWidth,'f',precision);
- }
-}
-
 void MainWindow::beginFileProcessing(void)
 {
  int fileIndex = m_FileHasher->currentFileIndex();
@@ -1054,7 +1308,7 @@ void MainWindow::beginFileProcessing(void)
  QString rawText(fileInfo.fileName());
  if (fontMetrics.width(rawText) > ui->labelFileName->width())
  {
-  ui->labelFileName->setText(decorateFileName(rawText,fontMetrics,
+  ui->labelFileName->setText(DecorateFileName(rawText,fontMetrics,
                              ui->labelFileName->width()));
  }
  else
@@ -1062,7 +1316,7 @@ void MainWindow::beginFileProcessing(void)
   ui->labelFileName->setText(rawText);
  }
  qint64 fileSize = m_FileHasher->currentFileSize();
- ui->labelFileSize->setText(decorateFileSize(fileSize));
+ ui->labelFileSize->setText(FileSizeToString(fileSize));
  ui->statusBar->showMessage(tr("Processing file %1 of %2 ...")
   .arg(fileIndex+1).arg(m_FileHasher->sourceFilesCount()));
  showCounters();

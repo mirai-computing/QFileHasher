@@ -1,6 +1,6 @@
 /*
-    QFileHasher * A file hash calculation and verification utility
-    Copyright (C) 2009 Mirai Computing (mirai.computing@gmail.com)
+    QFileHasher * Cryptographic hash calculation and verification utility
+    Copyright (C) 2009-2011 Mirai Computing (mirai.computing@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -443,6 +443,14 @@ QByteArray CCryptographicHash::hash(const QByteArray &data, Algorithm method)
  return hash.result();
 }
 
+QByteArray CCryptographicHash::hash(const QString &message, Algorithm method)
+{
+ QByteArray data = message.toUtf8();
+ CCryptographicHash hash(method);
+ hash.addData(data);
+ return hash.result();
+}
+
 //
 
 CCryptographicHash::Algorithm CCryptographicHash::algorithm(const QString& name)
@@ -551,6 +559,67 @@ QString CCryptographicHash::extension(const Algorithm algorithm)
 #endif
   default:    return name(algorithm).toLower();
  }
+}
+
+int CCryptographicHash::digestSize(const Algorithm algorithm)
+{
+ switch (algorithm)
+ {
+#ifdef FEATURE_LIB_RHASH_CRC32
+  case Crc32: return 4;
+#endif
+#if defined FEATURE_LIB_TOMCRYPT_MD2
+  case Md2:   return 16;
+#endif
+#if defined FEATURE_QT_HASH || defined FEATURE_LIB_RHASH_MD4 || defined FEATURE_LIB_TOMCRYPT_MD4
+  case Md4:   return 16;
+#endif
+#if defined FEATURE_QT_HASH || defined FEATURE_LIB_RHASH_MD5 || defined FEATURE_LIB_TOMCRYPT_MD5
+  case Md5:   return 16;
+#endif
+#if defined FEATURE_QT_HASH || defined FEATURE_LIB_RHASH_SHA1 || defined FEATURE_LIB_TOMCRYPT_SHA1
+  case Sha1:  return 20;
+#endif
+#if defined FEATURE_LIB_SHA2 || defined FEATURE_LIB_TOMCRYPT
+  case Sha224: return 28;
+  case Sha256: return 32;
+  case Sha384: return 48;
+  case Sha512: return 64;
+#endif
+#ifdef FEATURE_LIB_TOMCRYPT
+  case Rmd128: return 16;
+  case Rmd160: return 20;
+  case Rmd256: return 16;
+  case Rmd320: return 20;
+  case Whirlpool: return 64;
+#endif
+#if defined FEATURE_LIB_RHASH_TIGER || defined FEATURE_LIB_TOMCRYPT_TIGER
+ case Tiger: return 24;
+#endif
+#ifdef FEATURE_LIB_RHASH
+  case Ed2k:  return 16;
+  case Tth:   return 24;
+  case Aich:  return 20;
+#endif
+  default:    return 0;
+ }
+}
+
+bool CCryptographicHash::detect(const QByteArray &message, const QByteArray &digest, Algorithm& method)
+{
+ for (int i = 0; i < CCryptographicHash::AlgorithmCount; i++)
+ {
+  method = (CCryptographicHash::Algorithm)i;
+  if (digest.size() == digestSize(method))
+  {
+   QByteArray h = hash(message,method);
+   if (h == digest)
+   {
+    return true;
+   }
+  }
+ }
+ return false;
 }
 
 #ifdef FEATURE_QT_HASH

@@ -1,6 +1,6 @@
 /*
-    QFileHasher * A file hash calculation and verification utility
-    Copyright (C) 2009 Mirai Computing (mirai.computing@gmail.com)
+    QFileHasher * Cryptographic hash calculation and verification utility
+    Copyright (C) 2009-2011 Mirai Computing (mirai.computing@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -161,9 +161,42 @@ QString CByteArrayCodec::name(const Encoding encoding)
  return "";
 }
 
+QString CByteArrayCodec::alphabet(const Encoding encoding)
+{
+ switch (encoding)
+ {
+  case CByteArrayCodec::Base16: return Base16Alphabet;
+  case CByteArrayCodec::Base16low: return Base16lowAlphabet;
+  case CByteArrayCodec::Base32: return Base32Alphabet;
+  case CByteArrayCodec::Base32hex: return Base32hexAlphabet;
+  case CByteArrayCodec::Base64: return Base64Alphabet;
+  case CByteArrayCodec::Base64url: return Base64urlAlphabet;
+ }
+ return "";
+}
+
 bool CByteArrayCodec::detect(const QString& data,
  CByteArrayCodec::Encoding& encoding)
 {
+ for (int i = 0; i < CByteArrayCodec::EncodingCount; i++)
+ {
+  encoding = (CByteArrayCodec::Encoding)i;
+  QString a = alphabet(encoding);
+  bool charsFit = true;
+  for (int j = 0; j < data.size(); j++)
+  {
+   if (!a.contains(data[j]))
+   {
+    charsFit = false;
+    break;
+   }
+  }
+  if (charsFit)
+  {
+   QByteArray b = fromString(data,encoding);
+   if (!b.isEmpty()) return true;
+  }
+ }
  return false;
 }
 

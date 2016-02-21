@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CRYPTOHASH_H
-#define CRYPTOHASH_H
+#ifndef MULTIHASH_H
+#define MULTIHASH_H
 
 #include <cstdlib>
 #include <cstdio>
@@ -28,6 +28,8 @@
 #ifdef FEATURE_QT_HASH
 #include <QtCore/QCryptographicHash>
 #endif
+#include <QtCore/QSet>
+#include <QtCore/QStringList>
 
 #ifdef FEATURE_LIB_RHASH
 namespace rhash
@@ -50,7 +52,7 @@ namespace ltc
 }
 #endif
 
-class CCryptographicHash : public QObject
+class CCryptographicMultiHash : public QObject
 {
  Q_OBJECT
  public:
@@ -85,7 +87,8 @@ class CCryptographicHash : public QObject
   AlgorithmCount
   };
  private:
-  CCryptographicHash::Algorithm m_Method;
+  CCryptographicMultiHash::Algorithm m_Method;
+  QSet<CCryptographicMultiHash::Algorithm> m_Methods;
 #ifdef FEATURE_LIB_RHASH
   struct rhash_context_t
   {
@@ -98,53 +101,88 @@ class CCryptographicHash : public QObject
 #ifdef FEATURE_LIB_SHA2
   struct sha2_context_t
   {
+   sha2::SHA256state sha224state;
    sha2::SHA256state sha256state;
+   sha2::SHA512state sha384state;
    sha2::SHA512state sha512state;
-   union
-   {
-    sha2::uchar sha224digest[sha2::SHA224dlen];
-    sha2::uchar sha256digest[sha2::SHA256dlen];
-    sha2::uchar sha384digest[sha2::SHA384dlen];
-    sha2::uchar sha512digest[sha2::SHA512dlen];
-   };
+   sha2::uchar sha224digest[sha2::SHA224dlen];
+   sha2::uchar sha256digest[sha2::SHA256dlen];
+   sha2::uchar sha384digest[sha2::SHA384dlen];
+   sha2::uchar sha512digest[sha2::SHA512dlen];
   }
   m_Context_sha2;
 #endif
 #ifdef FEATURE_LIB_TOMCRYPT
   struct ltc_context_t
   {
-   ltc::hash_state  state;
-   union
-   {
-    unsigned char md2digest[16]; //ltc::md2_desc.hashsize
-    unsigned char md4digest[16];
-    unsigned char md5digest[16];
-    unsigned char sha1digest[20];
-    unsigned char tiger_digest[24];
-    unsigned char sha224digest[28];
-    unsigned char sha256digest[32];
-    unsigned char sha384digest[48];
-    unsigned char sha512digest[64];
-    unsigned char rmd128digest[16];
-    unsigned char rmd160digest[20];
-    unsigned char rmd256digest[16];
-    unsigned char rmd320digest[20];
-    unsigned char whirlpool_digest[64];
-   };
+   ltc::hash_state md2state;
+   ltc::hash_state md4state;
+   ltc::hash_state md5state;
+   ltc::hash_state sha1state;
+   ltc::hash_state tiger_state;
+   ltc::hash_state sha224state;
+   ltc::hash_state sha256state;
+   ltc::hash_state sha384state;
+   ltc::hash_state sha512state;
+   ltc::hash_state rmd128state;
+   ltc::hash_state rmd160state;
+   ltc::hash_state rmd256state;
+   ltc::hash_state rmd320state;
+   ltc::hash_state whirlpool_state;
+   unsigned char md2digest[16]; //ltc::md2_desc.hashsize
+   unsigned char md4digest[16];
+   unsigned char md5digest[16];
+   unsigned char sha1digest[20];
+   unsigned char tiger_digest[24];
+   unsigned char sha224digest[28];
+   unsigned char sha256digest[32];
+   unsigned char sha384digest[48];
+   unsigned char sha512digest[64];
+   unsigned char rmd128digest[16];
+   unsigned char rmd160digest[20];
+   unsigned char rmd256digest[16];
+   unsigned char rmd320digest[20];
+   unsigned char whirlpool_digest[64];
   }
   m_Context_ltc;
 #endif
 #ifdef FEATURE_QT_HASH
-  QCryptographicHash* m_QtHash;
+  QCryptographicHash* m_QtHashMd4;
+#ifdef FEATURE_PREFER_QT_NATIVE_HASH
+  QCryptographicHash* m_QtHashMd5;
+  QCryptographicHash* m_QtHashSha1;
 #endif
+#endif
+  qint64 m_Size;
   QByteArray m_Result;
+  bool m_Dirty;
  public:
+  /** \brief Returns the set of enabled hashing algorithm identifiers. */
+  QSet<Algorithm> methods(void);
+  /** \brief Adds hashing algorithm to the set of enabled algorithms. */
+  void enableMethod(Algorithm method);
+  /** \brief Removes hashing algorithm from the set of enabled algorithms. */
+  void disableMethod(Algorithm method);
+  /** \brief Adds all known hashing algorithm to the set of enabled algorithms. */
+  void enableAllMethods(void);
+  /** \brief Removes all hashing algorithm from the set of enabled algorithms. */
+  void disableAllMethods(void);
+ public:
+  /** \brief Resets hash to initial state. This function should be called prior
+      to calculating new hash. */
   void reset(const qint64 size = 0);
+  /** \brief Passes new piece of data to enabled hashing algorithms. */
   void addData(const char *data, int length);
+  /** \brief Passes new piece of data to enabled hashing algorithms. */
   void addData(const QByteArray &data);
-  QByteArray result();
+  /** \brief Returns message digest (hash) for selected hashing algorithm. */
+  QByteArray result(Algorithm method);
+  /** \brief Calculates message digest (hash) with selected hashing algorithm
+      for given data. */
   static QByteArray hash(const QByteArray &data, Algorithm method);
-  static QByteArray hash(const QString &message, Algorithm method);
+  /** \brief Returns the list of message digests for all enabled hashing algorithms. */
+  QList<QByteArray> messageDigests
+   (QList<CCryptographicMultiHash::Algorithm>& methods, QStringList& names);
  public:
   static const int minHashLength = 8;
   /** \brief Returns hashing algorithm by its name. */
@@ -166,8 +204,9 @@ class CCryptographicHash : public QObject
   static QCryptographicHash::Algorithm qtAlgorithm(const Algorithm algorithm);
 #endif
  public:
-  CCryptographicHash(Algorithm method, const qint64 size = 0);
-  ~CCryptographicHash(void);
+  CCryptographicMultiHash(Algorithm method, const qint64 size = 0);
+  CCryptographicMultiHash(void);
+  ~CCryptographicMultiHash(void);
 };
 
 #endif

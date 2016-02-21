@@ -1,6 +1,6 @@
 /*
-    QFileHasher * A file hash calculation and verification utility
-    Copyright (C) 2009 Mirai Computing (mirai.computing@gmail.com)
+    QFileHasher * Cryptographic hash calculation and verification utility
+    Copyright (C) 2009-2011 Mirai Computing (mirai.computing@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include "feature.h"
 #include "filehasher.h"
 #include "bytearraycodec.h"
+#include "multihash.h"
 
 namespace Ui
 {
@@ -93,16 +94,18 @@ private:
  void disable(QWidget* widget) { setAccessible(*widget,false); }
  void enable(QAction* action) { setAccessible(*action,true); }
  void disable(QAction* action) { setAccessible(*action,false); }
- /** \brief Shortens a string to desired visible width by replacing an inner
-     part of the string with '~' (tilde) character. */
- QString decorateFileName(const QString& fileName,
-  const QFontMetrics& fontMetrics, const int stringWidth);
- /** \brief Converts number of bytes to string representation with appropriate
-     size suffix (b,Kb,Mb,Gb,Tb). */
- QString decorateFileSize(const qint64 fileSize);
- /** \brief Updates and displays file counters (unprocessed, processing, good,
-     error) on file hashing page. */
 private slots:
+ void switchToStartScreen(void);
+ void switchToProcessStringScreen(void);
+ void switchToProcessSingleFileScreen(void);
+ void switchToProcessMultipleFilesScreen(void);
+ void switchToDetectHashScreen(void);
+ void switchToAboutScreen(void);
+ void selectSingleFile(void);
+ //
+ void calculateStringOrFileHash(void);
+ void verifyStringOrFileHash(void);
+ //
  void setLocationComputer(void);
  void setLocationHome(void);
  void setLocationDocuments(void);
@@ -111,7 +114,7 @@ private slots:
  void refreshDirTree(void);
  void changeRootDir(const QModelIndex& index);
  void selectRootDir(void);
- void newChecksumFile(void);
+ void switchToNewChecksumFileScreen(void);
  void openChecksumFile(void);
  void verifyFileHashes(void);
  void updateFileHashes(void);
@@ -119,7 +122,6 @@ private slots:
  void refreshChecksumFile1(int);
  void previewChecksumFile(void);
  void saveChecksumFile(void);
- void showAboutPage(void);
  void selectAllFiles(void);
  void showScanSelection(void);
  void selectFilesToScan(const bool recursively);
@@ -131,6 +133,7 @@ private slots:
  void verifyItem(QListWidgetItem* item);
  void verifyAll(void);
  void verifyNone(void);
+ void changeUpdateMode(const int index);
  void showCounters(void);
  void clearReport(void);
  void showReport(void);
