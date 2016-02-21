@@ -1,0 +1,39 @@
+<RCC>
+    <qresource prefix="/" >
+        <file>resources/images/view-refresh.png</file>
+        <file>resources/images/document-new.png</file>
+        <file>resources/images/document-open.png</file>
+        <file>resources/images/document-save.png</file>
+        <file>resources/images/document-save-as.png</file>
+        <file>resources/images/edit-find.png</file>
+        <file>resources/images/list-add.png</file>
+        <file>resources/images/edit-clear.png</file>
+        <file>resources/images/edit-select-all.png</file>
+        <file>resources/images/media-seek-forward.png</file>
+        <file>resources/images/process-stop.png</file>
+        <file>resources/images/go-next.png</file>
+        <file>resources/images/application-certificate.png</file>
+        <file>resources/images/status-unchecked.png</file>
+        <file>resources/images/status-error.png</file>
+        <file>resources/images/status-good.png</file>
+        <file>resources/images/status-processing.png</file>
+        <file>resources/images/media-playback-pause.png</file>
+        <file>resources/images/media-playback-start.png</file>
+        <file>resources/images/document-print-preview.png</file>
+        <file>resources/images/help-browser.png</file>
+        <file>resources/images/computer.png</file>
+        <file>resources/images/user-home.png</file>
+        <file>resources/images/user-desktop.png</file>
+        <file>resources/images/document-open-small.png</file>
+        <file>resources/images/status-error-small.png</file>
+        <file>resources/images/status-good-small.png</file>
+        <file>resources/images/status-processing-small.png</file>
+        <file>resources/images/status-unchecked-small.png</file>
+        <file>resources/images/qfilehasher-app-icon-b-32x32.png</file>
+        <file>resources/images/qfilehasher-app-icon-b-16x16.png</file>
+        <file>resources/translations/qfilehasher_ru.qm</file>
+        <file>resources/translations/qt_ru.qm</file>
+        <file>resources/images/action-restart.png</file>
+        <file>resources/images/preferences-system.png</file>
+    </qresource>
+</RCC>

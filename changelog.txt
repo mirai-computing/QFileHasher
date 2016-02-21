@@ -1,0 +1,61 @@
+KEY [ ]pending [+]new/added [-]removed [*]changed/in-progress [!]fixed
+--- FUTURE : 1.0 release ---
+--- 05mar10 : 1.0beta3update1 ---
+[!] Fixed bug causing crash while trying to verify an SFV file.
+[!] Fixed few ugly bugs that almost rendered unusable hash encoding support.
+[+] Modified checksum file update modes to work closer to how they should.
+--- 30jan10 : 1.0beta3 ---
+[+] CFileHasher is heavily rewritten to comply with new architecture, more open
+    for features and less error-prone. However, still requires some effort.
+[+] Added HTML report page (hashing table in HTML format) and file lists for
+    groups of files (all, good - processed without errors, broken - processed
+    with any error, files with hash mismatch, files with access errors).
+    Any of these lists can be saved to a plain text file.
+[*] The list of files selected for hashing is now cleared by default
+    (previously it was kept from an earlier action).
+[+] Added "Refresh" button to the root directory selection page and to the
+    file selection page.
+[+] Selected files now can be deselected individually with a double-click.
+[+] Optional header, hash algorithm, comment characters, date and time format,
+    hash encoding.
+[+] Added differential update modes delta-Deep and delta-Complete
+[+] New CByteArrayCodec class for encoding and decoding data with Base16,
+    Base32, Base32hex, Base64 and Base64url encodings. Some hases are usually
+    stored BaseN-encoded, where N is >=32.
+[+] Added hash representation controls to checksum file preview screen.
+[+] A more accurate file size presentation.
+[+] Added support for different file encodings, automatic checksum file
+    reloading and positioning in browser on encoding selection changes.
+[+] Added a new button to restart hashing.
+[*] Added new settings page for fine application tuning.
+[+] Logo icons for all standard sizes: original SVG,
+    16,24,32,48,64,128,256,512-pixel PNGs,
+    16,24,32,48,64,128-pixel 8-bit/trasparent Windows ICOs.
+[!] Fixed minor flaw in hashing thread potentially leading to misbehaviour.
+--- 17oct09 : 1.0beta2update2 ---
+[+] Added support for new hashing algorithms using "librhash" library,
+    now 4 algorithms more are available: CRC32, ED2K, AICH, TTH.
+[+] Added support for SHA2 algorithm (224,256,384 in 512-bit versions),
+    RIPEMD (128,160,256,320-bit versions), Tiger and Whirlpool
+    using parts of "libtomcrypt" library. A lot of thanks to Tom St Denis. :)
+    Total number of suppoted hashes is now 12 (18 including SHA2/RIPEMD mods).
+[*] Checksum file parsing routines rewritten from a scratch for better
+    compatibility with 3rd party applications.
+[+] Added initial support for SFV files.
+[!] Fixed file numbering issue: file counter  the status bar now shows correct file numbers.
+[!] Fixed inaccessible files issue: different path separators might got mixed
+    if a checksum file was transferred between different systems, such paths
+    sometime make listed files virtually unreachable. System functions were
+    found helpless against mixed paths, some preconditioning was necessary.
+--- internal changes ---
+[+] New class CCryptographicHash acts as a proxy between various implementations
+    of hashing algorithms and reimplements built-in class QCryptographicHash
+    to support greater number of them and provide algorithm information.
+[-] CHashInfo class is removed, its functions are replaced by CCryptographicHash
+--- 07oct09 : 1.0beta2update1 ---
+[+] qfilehasher.rc included in src package.
+[*] Root directory path is now updated when switching to verification mode.
+[!] Regression fixed: new action could not be started if previous one has been
+    stopped while processing was paused.
+--- 04oct09 : 1.0beta2 ---
+--- INITIAL REVISION ---

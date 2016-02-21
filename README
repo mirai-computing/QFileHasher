@@ -1,0 +1,36 @@
+	About
+
+QFileHasher is an application to calculate and verify checksums (hashes) of 
+multiple files with wizard-like GUI. It supports 12 hashing algorithms: CRC32,
+MD2, MD4, MD5, SHA1, SHA2 (224,256,384,512)-bit, RIPEMD (128,160,256,320)-bit,
+Whirlpool, ED2K, AICH, Tiger, TTH. Taking into account modifications of SHA2 
+and RIPEMD total number of supported algorithms is 18. Also, QFileHasher 
+supports a number encodings for text representation of checksums: Base16 
+(hexadecimal), Base32, Base32hex, Base64, Base64url. 
+
+QFileHasher allows processing of nested directories and provides a number of 
+ways to update existing checksum files: Brief, Deep, Complete, delta-Deep and
+delta-Complete. Difference between updating modes is described by following
+matrix:
+
+Search for new files:              Deep, Complete, delta-Deep, delta-Complete
+Search for new directories:              Complete,             delta-Complete
+Process listed files:       Brief, Deep, Complete,
+Process only new files:                            delta-Deep, delta-Complete
+
+All files assumed to be UTF-8 encoded by default, but support for 8-bit
+encondings is also included.
+
+For any questions, problems or suggestions, bugs and patches,
+please contact Mirai Computing at "mirai.computing@gmail.com".
+
+
+	Legal info
+
+License for QFileHasher and Qt libraries is the GPL v3.0 (see COPYING).
+3rd party files, "libtomcrypt" library and "Tango" icon theme by Tango 
+Desktop Project are Public Domain.
+
+Source code of QFileHasher is available from project site 
+(http://sourceforge.net/projects/qfilehasher/) and Qt SDK source code
+can be obtained from QtSoftware (http://qt.nokia.com/).
